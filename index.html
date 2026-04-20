@@ -44,7 +44,9 @@ tailwind.config = {
     font-family: 'Noto Sans JP', sans-serif;
     background: linear-gradient(135deg, #F0F4FA 0%, #D6E0EE 100%);
     min-height: 100vh;
+    min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
   }
   .num { font-family: 'Inter', sans-serif; font-feature-settings: 'tnum'; }
   .phone-frame {
@@ -57,13 +59,18 @@ tailwind.config = {
     overflow: hidden;
   }
   @media (max-width: 430px) {
+    body { padding: 0 !important; background: #FFFFFF; }
     .phone-frame {
       width: 100vw;
       height: 100vh;
+      height: 100dvh;
       border-radius: 0;
       box-shadow: none;
     }
     .desktop-only { display: none !important; }
+    .mobile-hide { display: none !important; }
+    .bottom-nav { padding-bottom: max(env(safe-area-inset-bottom), 12px) !important; }
+    .screen-inner { padding-top: max(env(safe-area-inset-top), 8px); }
   }
   .notch {
     position: absolute;
@@ -152,8 +159,8 @@ tailwind.config = {
 
   <div class="screen-area" id="screenArea">
 
-    <!-- ステータスバー -->
-    <div class="status-bar">
+    <!-- ステータスバー（デスクトップのみ表示・実機では端末のステータスバーに譲る） -->
+    <div class="status-bar mobile-hide">
       <span class="num">9:41</span>
       <span class="flex items-center gap-1">
         <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="3" height="6" rx="0.5"/><rect x="4" y="2" width="3" height="8" rx="0.5"/><rect x="8" y="0" width="3" height="10" rx="0.5"/><rect x="12" y="3" width="3" height="7" rx="0.5"/></svg>
@@ -1261,7 +1268,7 @@ tailwind.config = {
   <div id="toast" class="toast"></div>
 
   <!-- ボトムナビ -->
-  <nav class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-ink-100 px-2 py-2 pb-6">
+  <nav class="bottom-nav absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-ink-100 px-2 py-2 pb-6">
     <div class="flex justify-around">
       <button onclick="goTo('home')" id="tab-home" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 tab-active">
         <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors">
