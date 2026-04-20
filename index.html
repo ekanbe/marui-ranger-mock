@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>レンジャー | マルイ物産</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          DEFAULT: '#1E3A5F',
+          dark: '#0A2540',
+          light: '#3B5B8C',
+          deep: '#05162B',
+          gold: '#C9A876',
+        },
+        ink: {
+          900: '#1A1A1A',
+          700: '#333333',
+          500: '#6B7280',
+          300: '#D1D5DB',
+          100: '#F3F4F6',
+        },
+        cream: '#FFFFFF',
+      },
+      fontFamily: {
+        sans: ['"Noto Sans JP"', 'sans-serif'],
+        num: ['Inter', 'sans-serif'],
+      },
+    }
+  }
+}
+</script>
+<style>
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, #F0F4FA 0%, #D6E0EE 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-family: 'Inter', sans-serif; font-feature-settings: 'tnum'; }
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: #FFFFFF;
+    border-radius: 48px;
+    box-shadow: 0 50px 100px -20px rgba(10,37,64,0.3), 0 0 0 12px #1a1a1a, 0 0 0 14px #333;
+    position: relative;
+    overflow: hidden;
+  }
+  @media (max-width: 430px) {
+    .phone-frame {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .desktop-only { display: none !important; }
+  }
+  .notch {
+    position: absolute;
+    top: 8px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 32px;
+    background: #1a1a1a;
+    border-radius: 20px;
+    z-index: 50;
+  }
+  .screen-area {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .screen-area::-webkit-scrollbar { display: none; }
+  .tab-active { color: #1E3A5F; }
+  .tab-active .tab-icon { background: #1E3A5F; color: white; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .status-bar {
+    height: 44px; padding: 14px 32px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600; color: #0F1419;
+  }
+  .progress-bar {
+    height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, #1E3A5F, #3B5B8C);
+    border-radius: 4px; transition: width 0.6s ease;
+  }
+  .sparkbar {
+    display: inline-block;
+    width: 4px; margin-right: 2px;
+    background: #1E3A5F;
+    border-radius: 2px;
+    vertical-align: bottom;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;
+  }
+  .btn-press { transition: transform 0.1s; }
+  .btn-press:active { transform: scale(0.97); }
+  .toast {
+    position: absolute;
+    bottom: 110px; left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: rgba(10, 37, 64, 0.95);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+<!-- デスクトップ用ラベル -->
+<div class="desktop-only fixed top-6 left-6 text-ink-900/80 text-xs tracking-widest uppercase">
+  <div class="mb-1 text-ink-900/50">MARUI BUSSAN</div>
+  <div class="text-lg font-semibold tracking-wide text-brand-dark">レンジャー モック v0.1</div>
+  <div class="mt-2 text-ink-900/40 text-[10px]">クリック可能なプロトタイプ</div>
+</div>
+
+<!-- iPhone風フレーム -->
+<div class="phone-frame">
+  <div class="notch desktop-only"></div>
+
+  <div class="screen-area" id="screenArea">
+
+    <!-- ステータスバー -->
+    <div class="status-bar">
+      <span class="num">9:41</span>
+      <span class="flex items-center gap-1">
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><rect x="0" y="4" width="3" height="6" rx="0.5"/><rect x="4" y="2" width="3" height="8" rx="0.5"/><rect x="8" y="0" width="3" height="10" rx="0.5"/><rect x="12" y="3" width="3" height="7" rx="0.5"/></svg>
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor"><path d="M8 0C4.5 0 1.8 1.5 0 3.5l1.5 1.5C3 3.5 5.3 2.5 8 2.5s5 1 6.5 2.5L16 3.5C14.2 1.5 11.5 0 8 0zm0 5c-1.5 0-2.8.6-3.8 1.5L6 8c.5-.5 1.2-.8 2-.8s1.5.3 2 .8l1.8-1.5C10.8 5.6 9.5 5 8 5z"/><circle cx="8" cy="9" r="1"/></svg>
+        <svg width="24" height="10" viewBox="0 0 24 10" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="9" rx="2"/><rect x="2" y="2" width="16" height="6" rx="1" fill="currentColor"/><rect x="21" y="3" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+
+    <!-- ========================= ①ホーム画面 ========================= -->
+    <section class="screen active fade-in" id="home">
+      <div class="px-6 pt-2 pb-24">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="text-xs text-ink-500 tracking-wider">おはようございます</div>
+            <div class="text-xl font-bold text-ink-900 mt-1">田中 健一 <span class="text-xs text-brand font-medium ml-1 px-2 py-0.5 bg-brand/10 rounded-full">SILVER</span></div>
+          </div>
+          <div class="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold">田</div>
+        </div>
+
+        <!-- 今月売上ヒーロー -->
+        <div class="bg-gradient-to-br from-brand to-brand-dark rounded-3xl p-6 text-white mb-4 shadow-xl">
+          <div class="text-xs text-white/70 tracking-widest uppercase">今月の売上</div>
+          <div class="num text-5xl font-bold mt-2 tracking-tight">¥842,000</div>
+          <div class="flex items-center gap-4 mt-4 text-sm">
+            <span class="flex items-center gap-1 text-emerald-300">▲ 12%</span>
+            <span class="text-white/60">前月比 ¥752,000</span>
+          </div>
+          <div class="mt-5 pt-5 border-t border-white/10">
+            <div class="flex justify-between text-xs text-white/70 mb-2">
+              <span>今月の目標</span>
+              <span class="num">68%</span>
+            </div>
+            <div class="progress-bar bg-white/20">
+              <div class="progress-fill" style="width: 68%; background: linear-gradient(90deg, #C9A876, #E8D4A8);"></div>
+            </div>
+            <div class="text-xs text-white/60 mt-2">あと <span class="num font-semibold text-white">¥398,000</span> で達成</div>
+          </div>
+        </div>
+
+        <!-- マージン -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="bg-white rounded-2xl p-5 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase mb-1">今月見込みマージン</div>
+            <div class="num text-2xl font-bold text-ink-900">¥42,100</div>
+            <div class="text-[10px] text-emerald-600 mt-1">▲ ¥4,500</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase mb-1">累計マージン</div>
+            <div class="num text-2xl font-bold text-ink-900">¥356,800</div>
+            <div class="text-[10px] text-ink-500 mt-1">2026年度</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase mb-1">担当店舗</div>
+            <div class="num text-2xl font-bold text-ink-900">12<span class="text-sm text-ink-500 font-normal ml-1">店</span></div>
+            <div class="text-[10px] text-ink-500 mt-1">好調 8 / 要フォロー 2</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase mb-1">今月の新規受注</div>
+            <div class="num text-2xl font-bold text-ink-900">24<span class="text-sm text-ink-500 font-normal ml-1">件</span></div>
+            <div class="text-[10px] text-emerald-600 mt-1">▲ 6 件</div>
+          </div>
+        </div>
+
+        <!-- 今日やること -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold text-ink-900">今日やること</div>
+            <span class="text-xs text-ink-500">3件</span>
+          </div>
+          <div class="space-y-3">
+            <div onclick="goTo('detail')" class="flex items-start gap-3 btn-press cursor-pointer">
+              <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5"></div>
+              <div class="flex-1">
+                <div class="text-sm text-ink-900 font-medium">SAHANJIをフォロー</div>
+                <div class="text-xs text-ink-500 mt-0.5">35日未発注・電話推奨</div>
+              </div>
+              <span class="text-xs text-brand font-semibold">開く →</span>
+            </div>
+            <div onclick="goTo('products')" class="flex items-start gap-3 btn-press cursor-pointer">
+              <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5"></div>
+              <div class="flex-1">
+                <div class="text-sm text-ink-900 font-medium">鼎泰豊に新商品「レンフラ メロン」を提案</div>
+                <div class="text-xs text-ink-500 mt-0.5">適合度 92%・特許出願中</div>
+              </div>
+              <span class="text-xs text-brand font-semibold">開く →</span>
+            </div>
+            <div onclick="goTo('showroom')" class="flex items-start gap-3 btn-press cursor-pointer">
+              <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5"></div>
+              <div class="flex-1">
+                <div class="text-sm text-ink-900 font-medium">ショールーム来場 14:00</div>
+                <div class="text-xs text-ink-500 mt-0.5">KOI 佐々木様ご来場</div>
+              </div>
+              <span class="text-xs text-brand font-semibold">開く →</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-xs text-ink-500 text-center tracking-wider">MARUI BUSSAN × RANGER</div>
+      </div>
+    </section>
+
+    <!-- ========================= ②顧客一覧画面 ========================= -->
+    <section class="screen fade-in" id="customers">
+      <div class="px-6 pt-2 pb-24">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-bold text-ink-900">担当店舗</h1>
+          <button onclick="showToast('新規顧客追加（準備中）')" class="w-10 h-10 rounded-full bg-ink-100 flex items-center justify-center text-ink-700 btn-press">+</button>
+        </div>
+
+        <!-- 検索 -->
+        <div class="bg-white border border-ink-100 rounded-2xl px-4 py-3 mb-4 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" placeholder="店名で検索" class="flex-1 text-sm outline-none bg-transparent" />
+        </div>
+
+        <!-- フィルタ -->
+        <div class="flex gap-2 mb-4 overflow-x-auto -mx-6 px-6 pb-2" id="customerFilters">
+          <button onclick="toggleFilter(this, 'customerFilters')" class="px-4 py-2 bg-brand text-white text-xs rounded-full whitespace-nowrap font-medium filter-btn">すべて 12</button>
+          <button onclick="toggleFilter(this, 'customerFilters')" class="px-4 py-2 bg-white border border-ink-100 text-ink-700 text-xs rounded-full whitespace-nowrap font-medium filter-btn">好調 8</button>
+          <button onclick="toggleFilter(this, 'customerFilters')" class="px-4 py-2 bg-white border border-ink-100 text-ink-700 text-xs rounded-full whitespace-nowrap font-medium filter-btn">停滞 2</button>
+          <button onclick="toggleFilter(this, 'customerFilters')" class="px-4 py-2 bg-white border border-ink-100 text-red-500 text-xs rounded-full whitespace-nowrap font-medium filter-btn">要フォロー 2</button>
+        </div>
+
+        <!-- 顧客カード -->
+        <div class="space-y-3">
+          <div class="bg-white rounded-2xl p-5 border border-ink-100 btn-press" onclick="goTo('detail')">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="status-dot bg-emerald-500"></span>
+                  <span class="text-xs text-emerald-600 font-semibold">好調</span>
+                </div>
+                <div class="text-lg font-bold text-ink-900 mt-1">鼎泰豊 東京駅八重洲口店</div>
+                <div class="text-xs text-ink-500">中華・飲茶 / 千代田区</div>
+              </div>
+              <div class="text-right">
+                <div class="num text-xl font-bold text-ink-900">¥128,000</div>
+                <div class="text-[10px] text-ink-500">今月</div>
+                <div class="num text-[11px] text-ink-700 font-semibold mt-1">¥3,240,000</div>
+                <div class="text-[10px] text-ink-500">累計</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <span class="text-[11px] text-ink-500">最終発注 <span class="num text-ink-900 font-semibold">5日前</span></span>
+              <span class="text-[11px] text-brand font-semibold">次：レンフラ メロン 提案 →</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border-2 border-red-200 btn-press" onclick="goTo('detail')">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="status-dot bg-red-500"></span>
+                  <span class="text-xs text-red-600 font-semibold">要フォロー</span>
+                </div>
+                <div class="text-lg font-bold text-ink-900 mt-1">SAHANJI ゆめタウン別府店</div>
+                <div class="text-xs text-ink-500">カフェ・大分別府</div>
+              </div>
+              <div class="text-right">
+                <div class="num text-xl font-bold text-ink-900">¥0</div>
+                <div class="text-[10px] text-ink-500">今月</div>
+                <div class="num text-[11px] text-ink-700 font-semibold mt-1">¥892,400</div>
+                <div class="text-[10px] text-ink-500">累計</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-red-100">
+              <span class="text-[11px] text-red-600 font-semibold">最終発注 <span class="num font-bold">35日前</span></span>
+              <span class="text-[11px] text-brand font-semibold">電話フォロー推奨 →</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-ink-100 btn-press" onclick="goTo('detail')">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="status-dot bg-emerald-500"></span>
+                  <span class="text-xs text-emerald-600 font-semibold">好調</span>
+                </div>
+                <div class="text-lg font-bold text-ink-900 mt-1">KOI The なんば店</div>
+                <div class="text-xs text-ink-500">タピオカドリンク・大阪難波</div>
+              </div>
+              <div class="text-right">
+                <div class="num text-xl font-bold text-ink-900">¥234,500</div>
+                <div class="text-[10px] text-ink-500">今月</div>
+                <div class="num text-[11px] text-ink-700 font-semibold mt-1">¥5,120,000</div>
+                <div class="text-[10px] text-ink-500">累計</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <span class="text-[11px] text-ink-500">最終発注 <span class="num text-ink-900 font-semibold">2日前</span></span>
+              <span class="text-[11px] text-brand font-semibold">ショールーム招待済 →</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-ink-100 btn-press" onclick="goTo('detail')">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="status-dot bg-amber-500"></span>
+                  <span class="text-xs text-amber-600 font-semibold">停滞</span>
+                </div>
+                <div class="text-lg font-bold text-ink-900 mt-1">台湾甜商店 ららぽーと和泉店</div>
+                <div class="text-xs text-ink-500">台湾スイーツ・大阪和泉</div>
+              </div>
+              <div class="text-right">
+                <div class="num text-xl font-bold text-ink-900">¥24,000</div>
+                <div class="text-[10px] text-ink-500">今月</div>
+                <div class="num text-[11px] text-ink-700 font-semibold mt-1">¥1,640,000</div>
+                <div class="text-[10px] text-ink-500">累計</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <span class="text-[11px] text-ink-500">最終発注 <span class="num text-ink-900 font-semibold">18日前</span></span>
+              <span class="text-[11px] text-brand font-semibold">次：提案ネタ確認 →</span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-ink-100 btn-press" onclick="goTo('detail')">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="status-dot bg-emerald-500"></span>
+                  <span class="text-xs text-emerald-600 font-semibold">好調</span>
+                </div>
+                <div class="text-lg font-bold text-ink-900 mt-1">四季旬菜里山・囲炉裏</div>
+                <div class="text-xs text-ink-500">居酒屋・東京</div>
+              </div>
+              <div class="text-right">
+                <div class="num text-xl font-bold text-ink-900">¥98,200</div>
+                <div class="text-[10px] text-ink-500">今月</div>
+                <div class="num text-[11px] text-ink-700 font-semibold mt-1">¥2,410,000</div>
+                <div class="text-[10px] text-ink-500">累計</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <span class="text-[11px] text-ink-500">最終発注 <span class="num text-ink-900 font-semibold">8日前</span></span>
+              <span class="text-[11px] text-brand font-semibold">継続中 →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ③顧客詳細画面 ========================= -->
+    <section class="screen fade-in" id="detail">
+      <div class="px-6 pt-2 pb-24">
+        <button onclick="goTo('customers')" class="text-brand text-sm mb-4 flex items-center gap-1">← 顧客一覧</button>
+
+        <div class="mb-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="status-dot bg-emerald-500"></span>
+            <span class="text-xs text-emerald-600 font-semibold">好調</span>
+          </div>
+          <h1 class="text-2xl font-bold text-ink-900">鼎泰豊 東京駅八重洲口店</h1>
+          <div class="text-sm text-ink-500 mt-1">中華・飲茶 / 東京都千代田区 / 担当 2022年〜</div>
+        </div>
+
+        <!-- 月別売上推移 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold text-ink-900">月別売上推移</div>
+            <span class="text-xs text-emerald-600 font-semibold">▲ 24% 成長</span>
+          </div>
+          <div class="flex items-end gap-1.5 h-32">
+            <div class="flex-1 bg-ink-100 rounded-t" style="height:40%"></div>
+            <div class="flex-1 bg-ink-100 rounded-t" style="height:55%"></div>
+            <div class="flex-1 bg-ink-100 rounded-t" style="height:45%"></div>
+            <div class="flex-1 bg-ink-100 rounded-t" style="height:62%"></div>
+            <div class="flex-1 bg-ink-100 rounded-t" style="height:58%"></div>
+            <div class="flex-1 bg-brand rounded-t" style="height:88%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-ink-500 mt-2 num">
+            <span>11月</span><span>12月</span><span>1月</span><span>2月</span><span>3月</span><span>4月</span>
+          </div>
+        </div>
+
+        <!-- 数字 -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="bg-white rounded-2xl p-4 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase">今月売上</div>
+            <div class="num text-xl font-bold text-ink-900 mt-1">¥128,000</div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-ink-100">
+            <div class="text-[10px] text-ink-500 tracking-wider uppercase">今月マージン</div>
+            <div class="num text-xl font-bold text-brand mt-1">¥6,400</div>
+          </div>
+        </div>
+
+        <!-- 商品別売上 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold text-ink-900">商品別売上（今月）</div>
+            <span class="text-xs text-ink-500">¥128,000</span>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand"></span>MDタピオカ黒糖 100g</span>
+                <span class="num font-semibold text-ink-900">¥62,400 <span class="text-[10px] text-ink-500 font-normal">49%</span></span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:49%"></div></div>
+              <div class="text-[10px] text-ink-500 mt-1 num">12ケース／月　▲ 2ケース</div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-light"></span>茶スプレッソ アールグレイ</span>
+                <span class="num font-semibold text-ink-900">¥38,400 <span class="text-[10px] text-ink-500 font-normal">30%</span></span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div>
+              <div class="text-[10px] text-ink-500 mt-1 num">4箱／月　変化なし</div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-brand-gold"></span>ナタデココ 500g</span>
+                <span class="num font-semibold text-ink-900">¥19,200 <span class="text-[10px] text-ink-500 font-normal">15%</span></span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:15%"></div></div>
+              <div class="text-[10px] text-ink-500 mt-1 num">8袋／月　▲ 1袋</div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-ink-300"></span>フングイ 55g</span>
+                <span class="num font-semibold text-ink-900">¥8,000 <span class="text-[10px] text-ink-500 font-normal">6%</span></span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:6%"></div></div>
+              <div class="text-[10px] text-ink-500 mt-1 num">2袋／月　初回導入</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 次の提案 -->
+        <div class="bg-brand rounded-2xl p-5 text-white mb-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[10px] tracking-wider uppercase text-brand-gold">AI推奨</span>
+            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded">適合度 92%</span>
+          </div>
+          <div class="font-bold text-lg mb-1">新商品「レンフラ メロン」</div>
+          <div class="text-sm text-white/80 mb-4">常温で届いてレンチンで完成。ミスタードーナツ採用実績</div>
+          <button class="bg-white text-brand text-xs font-bold py-2.5 px-4 rounded-full w-full" onclick="goTo('products')">提案トークを見る →</button>
+        </div>
+
+        <!-- 商談メモ -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100">
+          <div class="text-sm font-semibold text-ink-900 mb-3">最後の商談メモ</div>
+          <div class="text-sm text-ink-700 leading-relaxed">2026/04/15 訪問。店長より「夏向けの新ドリンクを探している・冷凍庫がもう限界」との声。常温で届くレンフラとクラフト80ピーチを提案済み、ショールーム招待で試食予定。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ④マージン画面 ========================= -->
+    <section class="screen fade-in" id="margin">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-2">マージン</h1>
+        <div class="text-xs text-ink-500 mb-6">あなたの取り分です</div>
+
+        <!-- ヒーロー -->
+        <div class="bg-gradient-to-br from-brand to-brand-dark rounded-3xl p-6 text-white mb-4 shadow-xl relative overflow-hidden">
+          <div class="absolute -right-6 -top-6 w-32 h-32 bg-brand-gold/20 rounded-full"></div>
+          <div class="relative">
+            <div class="text-xs text-white/70 tracking-widest uppercase">今月見込み報酬</div>
+            <div class="num text-5xl font-bold mt-2 tracking-tight">¥42,100</div>
+            <div class="flex items-center gap-3 mt-3">
+              <span class="text-xs text-emerald-300">▲ ¥4,500 前月比</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-white/10">
+              <div>
+                <div class="text-[10px] text-white/60 uppercase tracking-wider">確定分</div>
+                <div class="num text-xl font-semibold mt-1">¥18,300</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-white/60 uppercase tracking-wider">見込み</div>
+                <div class="num text-xl font-semibold mt-1">¥23,800</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 累計 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[10px] text-ink-500 tracking-wider uppercase">累計報酬</div>
+              <div class="num text-3xl font-bold text-ink-900 mt-1">¥356,800</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-ink-500">2026年度</div>
+              <div class="text-xs text-emerald-600 font-semibold mt-1">▲ ¥42,100/月</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 未払予定 -->
+        <div class="bg-white rounded-2xl p-5 border-2 border-amber-200 mb-4 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-20 h-20 bg-amber-100 rounded-full -mr-8 -mt-8 opacity-50"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full tracking-wider">未払い</span>
+                <div class="text-sm font-semibold text-ink-900">未払予定</div>
+              </div>
+              <span class="num text-xl font-bold text-amber-700">¥42,100</span>
+            </div>
+            <div class="space-y-2.5">
+              <div class="flex justify-between items-center text-sm">
+                <div>
+                  <div class="text-ink-900 font-medium">2026年 4月分（今月確定分）</div>
+                  <div class="text-[10px] text-ink-500 num">振込予定：2026/05/15</div>
+                </div>
+                <span class="num font-semibold text-ink-900">¥18,300</span>
+              </div>
+              <div class="flex justify-between items-center text-sm opacity-70">
+                <div>
+                  <div class="text-ink-900 font-medium">2026年 4月分（見込み）</div>
+                  <div class="text-[10px] text-ink-500 num">受注確定後に確定</div>
+                </div>
+                <span class="num font-semibold text-ink-900">¥23,800</span>
+              </div>
+            </div>
+            <div class="text-[10px] text-ink-500 mt-3 pt-3 border-t border-ink-100">※ 毎月15日に前月分を振込（振込手数料マルイ負担）</div>
+          </div>
+        </div>
+
+        <!-- 商品別報酬 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="text-sm font-semibold text-ink-900 mb-4">商品別 報酬内訳（今月）</div>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700">MDタピオカ黒糖</span>
+                <span class="num font-semibold text-ink-900">¥15,200</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700">茶スプレッソ アールグレイ</span>
+                <span class="num font-semibold text-ink-900">¥12,400</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:68%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700">クラフト80 ピーチ</span>
+                <span class="num font-semibold text-ink-900">¥8,700</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:48%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-sm mb-1">
+                <span class="text-ink-700">その他（ナタデココ等）</span>
+                <span class="num font-semibold text-ink-900">¥5,800</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:32%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 支払履歴 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-semibold text-ink-900">支払履歴</div>
+            <button onclick="showToast('支払履歴の詳細画面（準備中）')" class="text-xs text-brand font-semibold btn-press">すべて →</button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center text-sm">
+              <div>
+                <div class="text-ink-900 font-medium">2026年 3月分</div>
+                <div class="text-[10px] text-ink-500 num">振込済 2026/04/15</div>
+              </div>
+              <span class="num font-semibold text-ink-900">¥37,600</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <div>
+                <div class="text-ink-900 font-medium">2026年 2月分</div>
+                <div class="text-[10px] text-ink-500 num">振込済 2026/03/15</div>
+              </div>
+              <span class="num font-semibold text-ink-900">¥33,200</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <div>
+                <div class="text-ink-900 font-medium">2026年 1月分</div>
+                <div class="text-[10px] text-ink-500 num">振込済 2026/02/15</div>
+              </div>
+              <span class="num font-semibold text-ink-900">¥28,400</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ⑤商品提案画面 ========================= -->
+    <section class="screen fade-in" id="products">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-2">商品提案</h1>
+        <div class="text-xs text-ink-500 mb-6">売るための武器</div>
+
+        <!-- フィルタ -->
+        <div class="flex gap-2 mb-4 overflow-x-auto -mx-6 px-6 pb-2" id="productFilters">
+          <button onclick="toggleFilter(this, 'productFilters')" class="px-4 py-2 bg-brand text-white text-xs rounded-full whitespace-nowrap font-medium filter-btn">新着</button>
+          <button onclick="toggleFilter(this, 'productFilters')" class="px-4 py-2 bg-white border border-ink-100 text-ink-700 text-xs rounded-full whitespace-nowrap font-medium filter-btn">居酒屋向け</button>
+          <button onclick="toggleFilter(this, 'productFilters')" class="px-4 py-2 bg-white border border-ink-100 text-ink-700 text-xs rounded-full whitespace-nowrap font-medium filter-btn">レストラン向け</button>
+          <button onclick="toggleFilter(this, 'productFilters')" class="px-4 py-2 bg-white border border-ink-100 text-ink-700 text-xs rounded-full whitespace-nowrap font-medium filter-btn">割烹向け</button>
+        </div>
+
+        <!-- レンフラ メロン -->
+        <div class="bg-white rounded-2xl overflow-hidden border border-ink-100 mb-4">
+          <div class="h-44 relative overflow-hidden bg-ink-100">
+            <img src="https://makeshop-multi-images.akamaized.net/foodboat/itemimages/000000002019_3Naf4Ph.jpg" onerror="this.onerror=null;this.src='./images/renfra.jpg';" class="w-full h-full object-cover" alt="レンフラ メロン 100g">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            <span class="absolute top-3 left-3 text-[10px] bg-red-500 text-white px-2 py-1 rounded-full font-semibold">NEW・特許出願中</span>
+            <span class="absolute top-3 right-3 text-[10px] bg-white/90 text-brand font-semibold px-2 py-1 rounded-full">マルイNB</span>
+          </div>
+          <div class="p-5">
+            <div class="text-lg font-bold text-ink-900">レンフラ メロン 100g</div>
+            <div class="text-xs text-ink-500 mb-3">常温で届くレンチン個食フラッペ（ミスタードーナツ採用実績）</div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded mb-3">
+              <div class="text-[10px] font-bold text-red-600 tracking-widest mb-1">📢 悲鳴POP</div>
+              <div class="text-xs text-ink-900 font-medium">「ミキサーが詰まる・味がブレる・ピーク時に作れない」</div>
+            </div>
+
+            <div class="space-y-2 text-xs mb-4">
+              <div><span class="font-semibold text-ink-700">向く店：</span><span class="text-ink-500">外食チェーン・カフェ・ホテル</span></div>
+              <div><span class="font-semibold text-ink-700">売り文句：</span><span class="text-ink-500">ミキサー不要・洗い物ゼロ・誰が作っても同じ味</span></div>
+            </div>
+
+            <div class="bg-ink-100 rounded-xl p-3 mb-3">
+              <div class="text-[10px] font-bold text-ink-500 tracking-widest mb-2">💬 提案トーク例</div>
+              <div class="text-xs text-ink-700 leading-relaxed">「ミキサー大変じゃないですか？これ常温で届いて、店舗で凍らせてレンチンするだけなんです。大手さんでも採用いただいてて、センター→店舗の二重配送コストが全然違うと喜ばれてます」</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <div>
+                <div class="text-[10px] text-ink-500">あなたの報酬率</div>
+                <div class="num text-lg font-bold text-brand">2.5%</div>
+              </div>
+              <button onclick="goTo('customers')" class="bg-brand text-white text-xs font-bold py-2.5 px-5 rounded-full btn-press">この商品を提案</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- クラフト80 ピーチ -->
+        <div class="bg-white rounded-2xl overflow-hidden border border-ink-100 mb-4">
+          <div class="h-40 relative overflow-hidden bg-ink-100">
+            <img src="https://makeshop-multi-images.akamaized.net/foodboat/itemimages/000000000588_HdPv8H5.jpg" onerror="this.onerror=null;this.src='./images/craft80-peach.jpg';" class="w-full h-full object-cover" alt="クラフト80 ピーチ果肉ソース">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+            <span class="absolute top-3 right-3 text-[10px] bg-white/90 text-brand font-semibold px-2 py-1 rounded-full">マルイNB</span>
+          </div>
+          <div class="p-5">
+            <div class="text-lg font-bold text-ink-900">クラフト80 ピーチ果肉ソース 500g</div>
+            <div class="text-xs text-ink-500 mb-3">常温レトルト・果肉80g・ベトナム製（ゼンショーPBも同工場）</div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded mb-3">
+              <div class="text-[10px] font-bold text-red-600 tracking-widest mb-1">📢 悲鳴POP</div>
+              <div class="text-xs text-ink-900 font-medium">「冷凍庫がもう入らない・解凍管理が面倒・ロスが出る」</div>
+            </div>
+
+            <div class="space-y-2 text-xs mb-3">
+              <div><span class="font-semibold text-ink-700">向く店：</span><span class="text-ink-500">居酒屋・カフェ・ファミレス・テイクアウト</span></div>
+              <div><span class="font-semibold text-ink-700">売り文句：</span><span class="text-ink-500">冷凍庫スペース不要・常温保管・ロスが生まれない構造</span></div>
+            </div>
+
+            <div class="bg-ink-100 rounded-xl p-3 mb-3">
+              <div class="text-[10px] font-bold text-ink-500 tracking-widest mb-2">💬 提案トーク例</div>
+              <div class="text-xs text-ink-700 leading-relaxed">「冷凍庫そろそろいっぱいじゃないですか？これ常温で届くんです。ヨーグルトにもアイスにもドリンクにも使えて、解凍管理不要・ロスも出ない。ゼンショーさんのPBも同じ工場で作ってるので品質は太鼓判です」</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <div>
+                <div class="text-[10px] text-ink-500">あなたの報酬率</div>
+                <div class="num text-lg font-bold text-brand">2.0%</div>
+              </div>
+              <button onclick="goTo('customers')" class="bg-brand text-white text-xs font-bold py-2.5 px-5 rounded-full btn-press">この商品を提案</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 茶スプレッソ -->
+        <div class="bg-white rounded-2xl overflow-hidden border border-ink-100 mb-4">
+          <div class="h-40 relative overflow-hidden bg-ink-100">
+            <img src="https://makeshop-multi-images.akamaized.net/foodboat/itemimages/000000002006_jPwWhpC.jpg" onerror="this.onerror=null;this.src='./images/cha-spresso.jpg';" class="w-full h-full object-cover" alt="茶スプレッソ アールグレイ">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-semibold">ITI星受賞</span>
+            <span class="absolute top-3 right-3 text-[10px] bg-white/90 text-brand font-semibold px-2 py-1 rounded-full">マルイNB</span>
+          </div>
+          <div class="p-5">
+            <div class="text-lg font-bold text-ink-900">茶スプレッソ アールグレイ 450cc</div>
+            <div class="text-xs text-ink-500 mb-3">台湾茶を非加熱HPP抽出・1本で4L分のドリンク</div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded mb-3">
+              <div class="text-[10px] font-bold text-red-600 tracking-widest mb-1">📢 悲鳴POP</div>
+              <div class="text-xs text-ink-900 font-medium">「お茶の抽出に8時間かかる・味がブレる・技術が必要」</div>
+            </div>
+
+            <div class="space-y-2 text-xs mb-3">
+              <div><span class="font-semibold text-ink-700">向く店：</span><span class="text-ink-500">カフェ・ホテル・外食チェーン</span></div>
+              <div><span class="font-semibold text-ink-700">売り文句：</span><span class="text-ink-500">インスタントなのに本格・ITI一ツ星受賞の香り</span></div>
+            </div>
+
+            <div class="bg-ink-100 rounded-xl p-3 mb-3">
+              <div class="text-[10px] font-bold text-ink-500 tracking-widest mb-2">💬 提案トーク例</div>
+              <div class="text-xs text-ink-700 leading-relaxed">「お茶の抽出って8時間かかりますよね。これ1本で4L分のドリンクが作れます。しかもITI国際味覚審査機構で星を取ってる本物の香り。水で割るだけで本格ミルクティー。ピーク時でも味が安定するんです」</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <div>
+                <div class="text-[10px] text-ink-500">あなたの報酬率</div>
+                <div class="num text-lg font-bold text-brand">2.0%</div>
+              </div>
+              <button onclick="goTo('customers')" class="bg-brand text-white text-xs font-bold py-2.5 px-5 rounded-full btn-press">この商品を提案</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MDタピオカ黒糖 -->
+        <div class="bg-white rounded-2xl overflow-hidden border border-ink-100 mb-4">
+          <div class="h-40 relative overflow-hidden bg-ink-100">
+            <img src="https://makeshop-multi-images.akamaized.net/foodboat/itemimages/000000000525_MKkfWSI.jpg" onerror="this.onerror=null;this.src='./images/tapioca.jpg';" class="w-full h-full object-cover" alt="MDタピオカ黒糖">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 text-[10px] bg-brand text-white px-2 py-1 rounded-full font-semibold">TOP1商品</span>
+          </div>
+          <div class="p-5">
+            <div class="text-lg font-bold text-ink-900">MDタピオカ黒糖 100g</div>
+            <div class="text-xs text-ink-500 mb-3">台湾産・個食タイプ・湯煎するだけ（3年で5.2億円の看板商品）</div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded mb-3">
+              <div class="text-[10px] font-bold text-red-600 tracking-widest mb-1">📢 悲鳴POP</div>
+              <div class="text-xs text-ink-900 font-medium">「タピオカの仕込みが大変・味ブレ・洗い物が多い」</div>
+            </div>
+
+            <div class="space-y-2 text-xs mb-3">
+              <div><span class="font-semibold text-ink-700">向く店：</span><span class="text-ink-500">タピオカ専門店・カフェ・外食チェーン</span></div>
+              <div><span class="font-semibold text-ink-700">売り文句：</span><span class="text-ink-500">湯煎3分で専門店の味・スタッフ変わっても味ブレなし</span></div>
+            </div>
+
+            <div class="bg-ink-100 rounded-xl p-3 mb-3">
+              <div class="text-[10px] font-bold text-ink-500 tracking-widest mb-2">💬 提案トーク例</div>
+              <div class="text-xs text-ink-700 leading-relaxed">「タピオカってまだまだ人気ですよね。これ湯煎3分で専門店の味そのまま。スタッフが変わっても味が安定します。3年で5.2億円売れてる、うちの看板商品です。SNSで映えるのでリピーターも取れますよ」</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <div>
+                <div class="text-[10px] text-ink-500">あなたの報酬率</div>
+                <div class="num text-lg font-bold text-brand">2.0%</div>
+              </div>
+              <button onclick="goTo('customers')" class="bg-brand text-white text-xs font-bold py-2.5 px-5 rounded-full btn-press">この商品を提案</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- フングイ 55g -->
+        <div class="bg-white rounded-2xl overflow-hidden border border-ink-100 mb-4">
+          <div class="h-40 relative overflow-hidden bg-ink-100">
+            <img src="https://makeshop-multi-images.akamaized.net/foodboat/itemimages/000000002020_b8UC7ZL.jpg" class="w-full h-full object-cover" alt="フングイ 55g">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+            <span class="absolute top-3 left-3 text-[10px] bg-red-500 text-white px-2 py-1 rounded-full font-semibold">TREND</span>
+          </div>
+          <div class="p-5">
+            <div class="text-lg font-bold text-ink-900">フングイ 55g</div>
+            <div class="text-xs text-ink-500 mb-3">台湾伝統スイーツ・プルプルもちもち食感（SNS映え）</div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-3 rounded mb-3">
+              <div class="text-[10px] font-bold text-red-600 tracking-widest mb-1">📢 悲鳴POP</div>
+              <div class="text-xs text-ink-900 font-medium">「タピオカの次のトレンドがない・インスタ映えしない」</div>
+            </div>
+
+            <div class="space-y-2 text-xs mb-3">
+              <div><span class="font-semibold text-ink-700">向く店：</span><span class="text-ink-500">カフェ・タピオカ店・台湾スイーツ店</span></div>
+              <div><span class="font-semibold text-ink-700">売り文句：</span><span class="text-ink-500">タピオカの次のトレンド・レンチンするだけ・SNS映え</span></div>
+            </div>
+
+            <div class="bg-ink-100 rounded-xl p-3 mb-3">
+              <div class="text-[10px] font-bold text-ink-500 tracking-widest mb-2">💬 提案トーク例</div>
+              <div class="text-xs text-ink-700 leading-relaxed">「"フングイ"って聞いたことありますか？台湾の新トレンドスイーツで、プルプルもちもちの新食感。見るだけで『何これ？』ってSNSに上がるんです。レンチンするだけで出せるので、新メニュー追加の負担ゼロ。大手チェーンさんでも採用実績あります」</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-ink-100">
+              <div>
+                <div class="text-[10px] text-ink-500">あなたの報酬率</div>
+                <div class="num text-lg font-bold text-brand">2.0%</div>
+              </div>
+              <button onclick="goTo('customers')" class="bg-brand text-white text-xs font-bold py-2.5 px-5 rounded-full btn-press">この商品を提案</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ⑥通知画面 ========================= -->
+    <section class="screen fade-in" id="notifications">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-6">通知</h1>
+
+        <div class="space-y-3">
+          <div onclick="goTo('margin')" class="bg-gradient-to-r from-emerald-50 to-white rounded-2xl p-5 border border-emerald-100 btn-press cursor-pointer">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg">✓</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-ink-900">鼎泰豊で受注が入りました</div>
+                <div class="text-xs text-ink-500 mt-1 leading-relaxed">MDタピオカ黒糖 100g 12ケース / <span class="num">¥48,000</span><br>あなたの報酬：<span class="num text-brand font-bold">+¥960</span></div>
+                <div class="text-[10px] text-ink-500 mt-2 num">5分前</div>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="goTo('margin')" class="bg-white rounded-2xl p-5 border border-brand-gold/40 btn-press cursor-pointer">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-brand-gold text-white flex items-center justify-center">🏆</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-ink-900">今月報酬が5万円を超えました</div>
+                <div class="text-xs text-ink-500 mt-1">累計 ¥42,100 → 目標まで ¥7,900</div>
+                <div class="text-[10px] text-ink-500 mt-2 num">2時間前</div>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="goTo('detail')" class="bg-white rounded-2xl p-5 border border-red-200 btn-press cursor-pointer">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center">⚠</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-ink-900">SAHANJIが30日未発注です</div>
+                <div class="text-xs text-ink-500 mt-1">電話 or 訪問をおすすめします</div>
+                <div class="text-[10px] text-ink-500 mt-2 num">今朝 9:00</div>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="goTo('products')" class="bg-white rounded-2xl p-5 border border-ink-100 btn-press cursor-pointer">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center">💡</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-ink-900">来週おすすめ提案：レンフラ</div>
+                <div class="text-xs text-ink-500 mt-1">担当5店舗に適合（平均92%）</div>
+                <div class="text-[10px] text-ink-500 mt-2 num">昨日</div>
+              </div>
+            </div>
+          </div>
+
+          <div onclick="goTo('home')" class="bg-white rounded-2xl p-5 border border-ink-100 btn-press cursor-pointer">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-ink-500 text-white flex items-center justify-center">🎯</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-ink-900">今月目標まであと2店舗</div>
+                <div class="text-xs text-ink-500 mt-1">新規開拓で達成です</div>
+                <div class="text-[10px] text-ink-500 mt-2 num">3日前</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ⑦ランク・実績画面 ========================= -->
+    <section class="screen fade-in" id="ranking">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-6">ランク & 実績</h1>
+
+        <!-- 現在ランク -->
+        <div class="bg-gradient-to-br from-ink-700 to-ink-900 rounded-3xl p-6 text-white mb-4 relative overflow-hidden">
+          <div class="absolute top-0 right-0 text-8xl opacity-10">🥈</div>
+          <div class="relative">
+            <div class="text-xs text-white/60 tracking-widest uppercase">現在のランク</div>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="text-4xl font-bold tracking-wide" style="color:#C9A876">SILVER</span>
+              <span class="text-xs bg-white/10 px-2 py-1 rounded">Lv.4</span>
+            </div>
+            <div class="mt-5">
+              <div class="flex justify-between text-xs mb-2">
+                <span class="text-white/70">GOLDまで</span>
+                <span class="num text-brand-gold font-semibold">¥143,200</span>
+              </div>
+              <div class="progress-bar bg-white/10">
+                <div class="progress-fill" style="width:71%; background:#C9A876"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 実績数値 -->
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="bg-white rounded-2xl p-4 border border-ink-100 text-center">
+            <div class="num text-2xl font-bold text-ink-900">47</div>
+            <div class="text-[10px] text-ink-500 mt-1 tracking-wider">紹介件数</div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-ink-100 text-center">
+            <div class="num text-2xl font-bold text-ink-900">12</div>
+            <div class="text-[10px] text-ink-500 mt-1 tracking-wider">継続店舗</div>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-ink-100 text-center">
+            <div class="num text-2xl font-bold text-ink-900">4<span class="text-sm text-ink-500 font-normal">/8</span></div>
+            <div class="text-[10px] text-ink-500 mt-1 tracking-wider">獲得バッジ</div>
+          </div>
+        </div>
+
+        <!-- 月間ランキング（先に表示・目立たせる） -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🏆</span>
+              <div class="text-sm font-semibold text-ink-900">月間ランキング</div>
+            </div>
+            <span class="text-xs text-ink-500">2026年 4月 TOP5</span>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="num w-8 text-center font-bold text-amber-500 text-lg">🥇</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">山本 太郎</div>
+                <div class="text-[10px] text-ink-500 num">¥98,200</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="num w-8 text-center font-bold text-gray-400 text-lg">🥈</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">佐藤 美咲</div>
+                <div class="text-[10px] text-ink-500 num">¥71,500</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="num w-8 text-center font-bold text-amber-700 text-lg">🥉</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">鈴木 健</div>
+                <div class="text-[10px] text-ink-500 num">¥58,300</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-brand/5 -mx-2 px-2 py-2 rounded-lg">
+              <div class="num w-8 text-center font-bold text-brand">4</div>
+              <div class="flex-1">
+                <div class="text-sm font-bold text-brand">田中 健一（あなた）</div>
+                <div class="text-[10px] text-ink-500 num">¥42,100</div>
+              </div>
+              <span class="text-[10px] text-emerald-600 font-semibold">▲2</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="num w-8 text-center font-bold text-ink-500">5</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">高橋 愛</div>
+                <div class="text-[10px] text-ink-500 num">¥38,700</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- バッジコレクション -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold text-ink-900">バッジコレクション</div>
+            <span class="text-xs text-ink-500">4/8</span>
+          </div>
+          <div class="grid grid-cols-4 gap-3">
+            <div class="text-center">
+              <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-amber-200 to-amber-400 flex items-center justify-center text-2xl">🥇</div>
+              <div class="text-[10px] text-ink-700 mt-1">初受注</div>
+            </div>
+            <div class="text-center">
+              <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-emerald-200 to-emerald-400 flex items-center justify-center text-2xl">🎯</div>
+              <div class="text-[10px] text-ink-700 mt-1">月目標</div>
+            </div>
+            <div class="text-center">
+              <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-sky-200 to-sky-400 flex items-center justify-center text-2xl">🔥</div>
+              <div class="text-[10px] text-ink-700 mt-1">3ヶ月連続</div>
+            </div>
+            <div class="text-center">
+              <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-purple-200 to-purple-400 flex items-center justify-center text-2xl">⭐</div>
+              <div class="text-[10px] text-ink-700 mt-1">10店舗</div>
+            </div>
+            <div class="text-center opacity-30">
+              <div class="w-14 h-14 mx-auto rounded-full bg-ink-100 flex items-center justify-center text-2xl">🏅</div>
+              <div class="text-[10px] text-ink-500 mt-1">未獲得</div>
+            </div>
+            <div class="text-center opacity-30">
+              <div class="w-14 h-14 mx-auto rounded-full bg-ink-100 flex items-center justify-center text-2xl">💎</div>
+              <div class="text-[10px] text-ink-500 mt-1">未獲得</div>
+            </div>
+            <div class="text-center opacity-30">
+              <div class="w-14 h-14 mx-auto rounded-full bg-ink-100 flex items-center justify-center text-2xl">👑</div>
+              <div class="text-[10px] text-ink-500 mt-1">未獲得</div>
+            </div>
+            <div class="text-center opacity-30">
+              <div class="w-14 h-14 mx-auto rounded-full bg-ink-100 flex items-center justify-center text-2xl">🚀</div>
+              <div class="text-[10px] text-ink-500 mt-1">未獲得</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ⑧ショールーム画面 ========================= -->
+    <section class="screen fade-in" id="showroom">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-2">ショールーム</h1>
+        <div class="text-xs text-ink-500 mb-6">恵比寿 体験拠点と連動</div>
+
+        <!-- 次回来場予定 -->
+        <div class="bg-gradient-to-br from-brand-gold to-amber-600 rounded-3xl p-6 text-white mb-4 shadow-xl">
+          <div class="text-xs text-white/80 tracking-widest uppercase">NEXT VISIT</div>
+          <div class="text-2xl font-bold mt-2">KOI 佐々木様</div>
+          <div class="flex items-center gap-4 mt-3 text-sm">
+            <span class="num">2026/04/21 14:00</span>
+            <span class="text-white/80">恵比寿ショールーム</span>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/20 text-xs text-white/90">
+            試食希望：レンフラ メロン・クラフト80 ピーチ果肉ソース
+          </div>
+          <button onclick="goTo('detail')" class="mt-4 bg-white text-amber-700 text-xs font-bold py-2.5 px-4 rounded-full w-full btn-press">商談メモを準備</button>
+        </div>
+
+        <!-- 次回来場候補（AI推奨） -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold bg-brand text-white px-2 py-0.5 rounded-full tracking-wider">AI推奨</span>
+              <div class="text-sm font-semibold text-ink-900">次回来場候補</div>
+            </div>
+            <span class="text-xs text-ink-500">3件</span>
+          </div>
+          <div class="text-[10px] text-ink-500 mb-4">店舗属性・発注履歴・試食傾向から自動推奨</div>
+
+          <div class="space-y-3">
+            <div class="border border-red-200 rounded-xl p-3 bg-red-50/40">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">S</div>
+                  <div>
+                    <div class="text-sm font-semibold text-ink-900">SAHANJI ゆめタウン別府店</div>
+                    <div class="text-[10px] text-ink-500">要フォロー / 35日未発注</div>
+                  </div>
+                </div>
+                <span class="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-semibold">適合 94%</span>
+              </div>
+              <div class="text-[11px] text-ink-700 bg-white rounded-lg p-2 mb-2 leading-relaxed">
+                💡 電話より<strong>ショールーム招待が効果的</strong>。過去も停滞期に来場で再活性化した実績あり（E店ケース）。
+              </div>
+              <div class="flex gap-2">
+                <button onclick="showToast('SAHANJIに招待を送信しました')" class="flex-1 bg-brand text-white text-[11px] font-bold py-2 px-3 rounded-full btn-press">招待を送る</button>
+                <button onclick="goTo('detail')" class="px-3 text-[11px] text-brand font-semibold">詳細 →</button>
+              </div>
+            </div>
+
+            <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/40">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">台</div>
+                  <div>
+                    <div class="text-sm font-semibold text-ink-900">台湾甜商店 ららぽーと和泉店</div>
+                    <div class="text-[10px] text-ink-500">停滞 / 台湾スイーツ</div>
+                  </div>
+                </div>
+                <span class="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-semibold">適合 91%</span>
+              </div>
+              <div class="text-[11px] text-ink-700 bg-white rounded-lg p-2 mb-2 leading-relaxed">
+                💡 業態と<strong>フングイ・レンフラの適合度が高い</strong>。試食で採用判断される可能性 大。
+              </div>
+              <div class="flex gap-2">
+                <button onclick="showToast('台湾甜商店に招待を送信しました')" class="flex-1 bg-brand text-white text-[11px] font-bold py-2 px-3 rounded-full btn-press">招待を送る</button>
+                <button onclick="goTo('detail')" class="px-3 text-[11px] text-brand font-semibold">詳細 →</button>
+              </div>
+            </div>
+
+            <div class="border border-emerald-200 rounded-xl p-3 bg-emerald-50/40">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">四</div>
+                  <div>
+                    <div class="text-sm font-semibold text-ink-900">四季旬菜里山・囲炉裏</div>
+                    <div class="text-[10px] text-ink-500">好調 / 居酒屋</div>
+                  </div>
+                </div>
+                <span class="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-semibold">適合 86%</span>
+              </div>
+              <div class="text-[11px] text-ink-700 bg-white rounded-lg p-2 mb-2 leading-relaxed">
+                💡 <strong>アップセル機会</strong>。ショ糖型液糖・茶スプレッソとの相性が高く、客単価UP提案に最適。
+              </div>
+              <div class="flex gap-2">
+                <button onclick="showToast('四季旬菜に招待を送信しました')" class="flex-1 bg-brand text-white text-[11px] font-bold py-2 px-3 rounded-full btn-press">招待を送る</button>
+                <button onclick="goTo('detail')" class="px-3 text-[11px] text-brand font-semibold">詳細 →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 招待した顧客 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold text-ink-900">招待した顧客</div>
+            <button onclick="showToast('ショールーム招待を送信（準備中）')" class="text-xs text-brand font-semibold btn-press">+ 招待</button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">C</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">KOI 佐々木様</div>
+                <div class="text-[10px] text-ink-500 num">来場予定：2026/04/21</div>
+              </div>
+              <span class="text-[10px] bg-emerald-100 text-emerald-700 font-semibold px-2 py-1 rounded">確定</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">鼎</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">鼎泰豊 表参道店</div>
+                <div class="text-[10px] text-ink-500 num">招待送信：2026/04/18</div>
+              </div>
+              <span class="text-[10px] bg-amber-100 text-amber-700 font-semibold px-2 py-1 rounded">調整中</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-ink-100 text-ink-500 flex items-center justify-center text-sm font-bold">A</div>
+              <div class="flex-1">
+                <div class="text-sm font-semibold text-ink-900">鼎泰豊 東京駅八重洲口店</div>
+                <div class="text-[10px] text-ink-500 num">来場済：2026/03/28</div>
+              </div>
+              <span class="text-[10px] bg-ink-100 text-ink-700 font-semibold px-2 py-1 rounded">完了</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 来場履歴 -->
+        <div class="bg-white rounded-2xl p-5 border border-ink-100">
+          <div class="text-sm font-semibold text-ink-900 mb-4">最近の来場履歴</div>
+          <div class="space-y-4">
+            <div class="flex gap-3">
+              <div class="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 shrink-0"></div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <div class="text-sm font-semibold text-ink-900">鼎泰豊 東京駅八重洲口店</div>
+                  <span class="text-[10px] text-ink-500 num">3/28</span>
+                </div>
+                <div class="text-xs text-ink-500 mt-1">試食：MDタピオカ黒糖、茶スプレッソ</div>
+                <div class="text-xs text-emerald-600 font-semibold mt-1">→ 受注成立 ¥48,000</div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 shrink-0"></div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <div class="text-sm font-semibold text-ink-900">四季旬菜</div>
+                  <span class="text-[10px] text-ink-500 num">3/15</span>
+                </div>
+                <div class="text-xs text-ink-500 mt-1">試食：レンフラ メロン、クラフト80</div>
+                <div class="text-xs text-emerald-600 font-semibold mt-1">→ 受注成立 ¥32,000</div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="w-2 h-2 bg-ink-300 rounded-full mt-1.5 shrink-0"></div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <div class="text-sm font-semibold text-ink-900">WILLCha 心斎橋店</div>
+                  <span class="text-[10px] text-ink-500 num">2/28</span>
+                </div>
+                <div class="text-xs text-ink-500 mt-1">試食：フルーツピューレ マンゴー</div>
+                <div class="text-xs text-ink-500 mt-1">→ 検討中</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= その他メニュー ========================= -->
+    <section class="screen fade-in" id="more">
+      <div class="px-6 pt-2 pb-24">
+        <h1 class="text-2xl font-bold text-ink-900 mb-6">その他</h1>
+        <div class="space-y-3">
+          <button onclick="goTo('notifications')" class="w-full bg-white rounded-2xl p-5 border border-ink-100 flex items-center gap-4 btn-press">
+            <div class="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xl">🔔</div>
+            <div class="flex-1 text-left">
+              <div class="text-sm font-bold text-ink-900">通知</div>
+              <div class="text-xs text-ink-500">未読 3件</div>
+            </div>
+            <span class="text-ink-300">›</span>
+          </button>
+          <button onclick="goTo('ranking')" class="w-full bg-white rounded-2xl p-5 border border-ink-100 flex items-center gap-4 btn-press">
+            <div class="w-12 h-12 rounded-full bg-brand-gold/20 text-amber-700 flex items-center justify-center text-xl">🏆</div>
+            <div class="flex-1 text-left">
+              <div class="text-sm font-bold text-ink-900">ランク & 実績</div>
+              <div class="text-xs text-ink-500">現在 SILVER Lv.4</div>
+            </div>
+            <span class="text-ink-300">›</span>
+          </button>
+          <button onclick="goTo('showroom')" class="w-full bg-white rounded-2xl p-5 border border-ink-100 flex items-center gap-4 btn-press">
+            <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xl">🏛</div>
+            <div class="flex-1 text-left">
+              <div class="text-sm font-bold text-ink-900">ショールーム</div>
+              <div class="text-xs text-ink-500">次回：4/21 14:00</div>
+            </div>
+            <span class="text-ink-300">›</span>
+          </button>
+          <button onclick="showToast('設定画面（準備中）')" class="w-full bg-white rounded-2xl p-5 border border-ink-100 flex items-center gap-4 btn-press opacity-60">
+            <div class="w-12 h-12 rounded-full bg-ink-100 text-ink-500 flex items-center justify-center text-xl">⚙</div>
+            <div class="flex-1 text-left">
+              <div class="text-sm font-bold text-ink-900">設定</div>
+              <div class="text-xs text-ink-500">アカウント・通知設定</div>
+            </div>
+            <span class="text-ink-300">›</span>
+          </button>
+        </div>
+        <div class="mt-8 text-center text-[10px] text-ink-500 tracking-widest">
+          MARUI BUSSAN<br>RANGER APP v0.1
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ボトムナビ -->
+  <nav class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-ink-100 px-2 py-2 pb-6">
+    <div class="flex justify-around">
+      <button onclick="goTo('home')" id="tab-home" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1 tab-active">
+        <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        </div>
+        <span class="text-[10px] font-medium">ホーム</span>
+      </button>
+      <button onclick="goTo('customers')" id="tab-customers" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1">
+        <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <span class="text-[10px] font-medium">顧客</span>
+      </button>
+      <button onclick="goTo('margin')" id="tab-margin" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1">
+        <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <span class="text-[10px] font-medium">報酬</span>
+      </button>
+      <button onclick="goTo('products')" id="tab-products" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1">
+        <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        </div>
+        <span class="text-[10px] font-medium">商品</span>
+      </button>
+      <button onclick="goTo('more')" id="tab-more" class="tab-btn flex-1 flex flex-col items-center gap-1 py-1">
+        <div class="tab-icon w-9 h-9 rounded-full bg-ink-100 flex items-center justify-center transition-colors relative">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+          <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">3</span>
+        </div>
+        <span class="text-[10px] font-medium">その他</span>
+      </button>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.classList.add('active');
+    document.getElementById('screenArea').scrollTop = 0;
+
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('tab-active'));
+    const tabMap = {
+      home: 'tab-home',
+      customers: 'tab-customers',
+      detail: 'tab-customers',
+      margin: 'tab-margin',
+      products: 'tab-products',
+      notifications: 'tab-more',
+      ranking: 'tab-more',
+      showroom: 'tab-more',
+      more: 'tab-more',
+    };
+    const tabId = tabMap[id] || 'tab-home';
+    const tab = document.getElementById(tabId);
+    if (tab) tab.classList.add('tab-active');
+  }
+
+  function toggleFilter(el, groupId) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.remove('bg-brand', 'text-white');
+      b.classList.add('bg-white', 'border', 'border-ink-100', 'text-ink-700');
+    });
+    el.classList.remove('bg-white', 'border', 'border-ink-100', 'text-ink-700', 'text-red-500');
+    el.classList.add('bg-brand', 'text-white');
+  }
+
+  let toastTimer;
+  function showToast(message) {
+    const t = document.getElementById('toast');
+    t.textContent = message;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+</script>
+
+</body>
+</html>
